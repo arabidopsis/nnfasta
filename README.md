@@ -22,7 +22,7 @@ pip install nnfasta
 ## Usage
 
 ```python
-from nnfasta import nnfastas 
+from nnfasta import nnfastas
 
 dataset = nnfastas(['athaliana.fasta','triticum.fasta','zmays.fasta'])
 
@@ -54,4 +54,22 @@ class Record:
     def name(self) -> str:
         return self.id
 ```
+
+## Test and Train Split best practice
+
+Use `LazyFasta`
+
+```python
+from nnfasta import nnfasta, LazyFasta
+from sklearn.model_selection import train_test_split
+
+dataset = nnfastas(['athaliana.fasta','triticum.fasta','zmays.fasta'])
+train_idx, val_idx = train_test_split(range(len(dataset)),test_size=.1,shuffle=True)
+
+# these are still Sequence[Record] objects.
+train_data = LazyFasta(datset, train_idx)
+test_data = LazyFasta(datset, test_idx)
+
+```
+
 Enjoy peps!

@@ -10,6 +10,7 @@ from typing import Iterator, overload
 @dataclass
 class Record:
     """Mimics biopython Record"""
+
     id: str
     """Sequence ID"""
     description: str
@@ -174,3 +175,33 @@ class CollectionFasta(Sequence[Record]):
         return list(
             self.get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1))
         )
+
+
+class LazyFasta(Sequence[Record]):
+    """Return sequence records from a list of indicies"""
+
+    def __init__(self, dataset: Sequence[Record], indexes: Sequence[int]):
+        """Use index to create a new dataset from another"""
+        self._dataset = dataset
+        self._indexes = indexes
+        assert len(dataset) > max(self._indexes) and min(self._indexes) >= 0
+
+    def __len__(self) -> int:
+        return len(self._indexes)
+
+    @overload
+    def __getitem__(self, idx: int) -> Record: ...
+    @overload
+    def __getitem__(self, idx: slice) -> list[Record]: ...
+    @overload
+    def __getitem__(self, idx: list[int]) -> list[Record]: ...
+    def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:  # type: ignore
+        index = self._indexes
+        if isinstance(idx, int):
+            return self._dataset[index[idx]]
+        if isinstance(idx, list):
+            return [self._dataset[index[i]] for i in idx]
+        return [
+            self._dataset[index[i]]
+            for i in range(idx.start, idx.stop or len(self), idx.step or 1)
+        ]
