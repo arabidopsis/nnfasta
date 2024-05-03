@@ -37,3 +37,20 @@ print('sequence', rec.id, rec.description, rec.seq)
 **Warning**: No checks are made for the existence of
 the fasta files. Also files of zero length will be rejected
 by `mmap`.
+
+A `Record` mimics biopython's `Record` and is simply:
+
+```python
+@dataclass
+class Record:
+    id: str
+    """Sequence ID"""
+    description: str
+    """Line prefixed by '>'"""
+    seq: str
+    """Sequence stripped of whitespace and uppercased"""
+
+    @property
+    def name(self) -> str:
+        return self.id
+```
