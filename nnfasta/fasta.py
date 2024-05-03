@@ -93,7 +93,10 @@ class RandomFasta(Sequence[Record]):
             return self.get_idx(idx)
         if isinstance(idx, list):
             return [self.get_idx(i) for i in idx]
-        return [self.get_idx(i) for i in range(idx.start, idx.stop or len(self), idx.step or 1)]
+        return [
+            self.get_idx(i)
+            for i in range(idx.start, idx.stop or len(self), idx.step or 1)
+        ]
 
 
 class CollectionFasta(Sequence[Record]):
@@ -142,4 +145,6 @@ class CollectionFasta(Sequence[Record]):
             return self.get_idx(idx)
         if isinstance(idx, list):
             return [self.get_idx(i) for i in idx]
-        return list(self.get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1)))
+        return list(
+            self.get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1))
+        )
