@@ -105,6 +105,10 @@ class RandomFasta(Sequence[Record]):
     def __len__(self) -> int:
         return len(self.pos)
 
+    def __getitems__(self, idx: list[int]) -> list[Record]:
+        """torch extention"""
+        return [self.get_idx(i) for i in idx]
+
     @overload
     def __getitem__(self, idx: int) -> Record: ...
     @overload
@@ -161,6 +165,10 @@ class CollectionFasta(Sequence[Record]):
         for i, rf in self._map_idxs(idxs):
             yield rf.get_idx(i)
 
+    def __getitems__(self, idx: list[int]) -> list[Record]:
+        """torch extention"""
+        return [self.get_idx(i) for i in idx]
+
     @overload
     def __getitem__(self, idx: int) -> Record: ...
     @overload
@@ -188,6 +196,11 @@ class LazyFasta(Sequence[Record]):
 
     def __len__(self) -> int:
         return len(self._indexes)
+
+    def __getitems__(self, idx: list[int]) -> list[Record]:
+        """torch extention"""
+        index = self._indexes
+        return [self._dataset[index[i]] for i in idx]
 
     @overload
     def __getitem__(self, idx: int) -> Record: ...
