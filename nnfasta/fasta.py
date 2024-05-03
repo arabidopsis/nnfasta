@@ -1,17 +1,20 @@
+import bisect
 import mmap
 import re
 import os
-import bisect
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Iterator, overload
 
 
 @dataclass
 class Record:
     id: str
+    """Sequence ID"""
     description: str
+    """Line prefixed by '>'"""
     seq: str
+    """Sequence stripped of whitespace and uppercased"""
 
     @property
     def name(self) -> str:
@@ -29,8 +32,23 @@ def remove_white(s: bytes) -> bytes:
 
 
 def nnfastas(
-    fasta_files: Sequence[os.PathLike], encoding: str | None = None
+    fasta_files: Sequence[os.PathLike | str], encoding: str | None = None
 ) -> Sequence[Record]:
+    """Given a sequence of fasta files return an indexable (list like) Fasta object.
+
+    Parameters
+    ----------
+
+    fasta_files: Sequence[PathLike | str]
+        sequence of Fasta files to mmap.
+    encoding: str, optional
+        text encoding of these files [default: ascii]
+
+    Returns
+    -------
+
+    A ``Sequence[Record]`` object.
+    """
     if not fasta_files:
         raise ValueError("no fasta files!")
     if len(fasta_files) == 1:
@@ -43,7 +61,7 @@ class RandomFasta(Sequence[Record]):
 
     ENCODING = "ascii"
 
-    def __init__(self, fasta_file: os.PathLike, encoding: str | None = None):
+    def __init__(self, fasta_file: os.PathLike | str, encoding: str | None = None):
 
         self.encoding = encoding or self.ENCODING
         self.fp = open(fasta_file, "rb")  # pylint: disable=consider-using-with
@@ -102,7 +120,9 @@ class RandomFasta(Sequence[Record]):
 class CollectionFasta(Sequence[Record]):
     """Multiple memory mapped fasta files"""
 
-    def __init__(self, fasta_files: Sequence[os.PathLike], encoding: str | None = None):
+    def __init__(
+        self, fasta_files: Sequence[os.PathLike | str], encoding: str | None = None
+    ):
         self.fastas = [RandomFasta(f, encoding=encoding) for f in fasta_files]
         _cumsum = []
         cumsum = 0
@@ -127,6 +147,7 @@ class CollectionFasta(Sequence[Record]):
         return self._len
 
     def get_idx(self, idx: int) -> Record:
+        """Given an integer ID return the Record"""
         i, rf = self._map_idx(idx)
         return rf.get_idx(i)
 

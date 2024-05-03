@@ -22,16 +22,18 @@ There are **no** dependencies.
 ## Usage
 
 ```python
-
 from nnfasta import nnfastas 
-
 
 dataset = nnfastas(['athaliana.fasta','triticum.fasta','zmays.fasta'])
 
-# display number of sequences
+# display the number of sequences
 print(len(dataset))
 
 # get a particular record
 rec = dataset[20]
 print('sequence', rec.id, rec.description, rec.seq)
 ```
+
+**Warning**: No checks are made for the existence of
+the fasta files. Also files of zero length will be rejected
+by `mmap`.
