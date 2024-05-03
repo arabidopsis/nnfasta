@@ -46,16 +46,16 @@ class RandomFasta(Sequence[Record]):
     def __init__(self, fasta_file: os.PathLike, encoding: str | None = None):
 
         self.encoding = encoding or self.ENCODING
-        self.fp = open(fasta_file, "rb") # pylint: disable=consider-using-with
+        self.fp = open(fasta_file, "rb")  # pylint: disable=consider-using-with
         self.fasta = mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ)
-        self.pos = self.find_pos()
+        self.pos = self._find_pos()
 
     def __del__(self):
         if self is not None and self.fp:
             self.fp.close()
             self.fp = None
 
-    def find_pos(self) -> list[tuple[int, int]]:
+    def _find_pos(self) -> list[tuple[int, int]]:
         f = [(h.start(), h.end()) for h in PREFIX.finditer(self.fasta)]
         end, start = zip(*f)
         end = end[1:] + (len(self.fasta),)
@@ -63,7 +63,7 @@ class RandomFasta(Sequence[Record]):
 
     def get_idx(self, idx: int) -> Record:
         s, e = self.pos[idx]
-        b = self.fasta[s:e] # mmap go to disk
+        b = self.fasta[s:e]  # mmap go to disk
         m = EOL.search(b)
         if not m:
             raise ValueError(f"not a fasta file: {str(b)}")
@@ -93,7 +93,7 @@ class RandomFasta(Sequence[Record]):
             return self.get_idx(idx)
         if isinstance(idx, list):
             return [self.get_idx(i) for i in idx]
-        return [self.get_idx(i) for i in range(idx.start, idx.stop, idx.step or 1)]
+        return [self.get_idx(i) for i in range(idx.start, idx.stop or len(self), idx.step or 1)]
 
 
 class CollectionFasta(Sequence[Record]):
@@ -142,4 +142,4 @@ class CollectionFasta(Sequence[Record]):
             return self.get_idx(idx)
         if isinstance(idx, list):
             return [self.get_idx(i) for i in idx]
-        return list(self.get_idxs(range(idx.start, idx.stop, idx.step or 1)))
+        return list(self.get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1)))
