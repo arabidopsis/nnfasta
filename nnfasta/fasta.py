@@ -9,6 +9,7 @@ from typing import Iterator, overload
 
 @dataclass
 class Record:
+    """Mimics biopython Record"""
     id: str
     """Sequence ID"""
     description: str
@@ -18,6 +19,7 @@ class Record:
 
     @property
     def name(self) -> str:
+        """same as ID"""
         return self.id
 
 
@@ -28,6 +30,7 @@ EOL = re.compile(rb"\n|\r", re.I | re.M)
 
 
 def remove_white(s: bytes) -> bytes:
+    """remove whitespace from byte list"""
     return WHITE.sub(b"", s)
 
 
@@ -80,6 +83,7 @@ class RandomFasta(Sequence[Record]):
         return list(zip(start, end))
 
     def get_idx(self, idx: int) -> Record:
+        """get Record for idx"""
         s, e = self.pos[idx]
         b = self.fasta[s:e]  # mmap go to disk
         m = EOL.search(b)
@@ -152,6 +156,7 @@ class CollectionFasta(Sequence[Record]):
         return rf.get_idx(i)
 
     def get_idxs(self, idxs: Sequence[int]) -> Iterator[Record]:
+        """get Records for sequence of integers"""
         for i, rf in self._map_idxs(idxs):
             yield rf.get_idx(i)
 

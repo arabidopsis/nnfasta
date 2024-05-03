@@ -1,5 +1,6 @@
 [MESSAGES CONTROL]
 disable=unused-argument,
+        missing-module-docstring,
         invalid-name,
         too-few-public-methods,
         use-dict-literal,
