@@ -54,3 +54,4 @@ class Record:
     def name(self) -> str:
         return self.id
 ```
+Enjoy peps!

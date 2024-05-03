@@ -4,13 +4,13 @@ from nnfasta import nnfastas
 from Bio import SeqIO
 
 
-def ok(r, rec):
+def _ok(r, rec):
     assert r.id == rec.id
     assert r.seq == str(rec.seq)
     assert r.description == rec.description
 
 
-def test():
+def _test():
 
     ffs = sys.argv[1:]
     if not ffs:
@@ -28,7 +28,7 @@ def test():
 
     for i, rec in enumerate(full):
         r = fasta[i]
-        ok(r, rec)
+        _ok(r, rec)
 
     total = len(full)
     for s, e in [
@@ -40,7 +40,7 @@ def test():
         recs = full[s:e]
         rs = fasta[s:e]
         for rec, r in zip(recs, rs):
-            ok(r, rec)
+            _ok(r, rec)
 
     for rl in [
         random.sample(range(0, total), random.randint(10, 60)) for _ in range(40)
@@ -48,8 +48,8 @@ def test():
         rs = fasta[rl]
         recs = [full[i] for i in rl]
         for rec, r in zip(recs, rs):
-            ok(r, rec)
+            _ok(r, rec)
     print("OK")
 
 
-test()
+_test()
