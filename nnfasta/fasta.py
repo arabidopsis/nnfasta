@@ -28,7 +28,7 @@ def remove_white(s: bytes) -> bytes:
     return WHITE.sub(b"", s)
 
 
-def mmap_fastas(
+def nnfastas(
     fasta_files: Sequence[os.PathLike], encoding: str | None = None
 ) -> Sequence[Record]:
     if not fasta_files:
