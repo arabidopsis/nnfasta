@@ -60,15 +60,20 @@ class Record:
 Use `LazyFasta`
 
 ```python
-from nnfasta import nnfasta, LazyFasta
+from nnfasta import nnfastas, LazyFasta
 from sklearn.model_selection import train_test_split
 
 dataset = nnfastas(['athaliana.fasta','triticum.fasta','zmays.fasta'])
-train_idx, val_idx = train_test_split(range(len(dataset)),test_size=.1,shuffle=True)
+train_idx, test_idx = train_test_split(range(len(dataset)),test_size=.1,shuffle=True)
 
 # these are still Sequence[Record] objects.
+
 train_data = LazyFasta(datset, train_idx)
 test_data = LazyFasta(datset, test_idx)
+
+# *OR* ... this is basically the same
+import torch
+train_data, test_data = torch.utils.data.random_split(dataset, [.9, .1])
 
 ```
 

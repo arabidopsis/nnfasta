@@ -85,6 +85,12 @@ class RandomFasta(Sequence[Record]):
 
     def get_idx(self, idx: int) -> Record:
         """get Record for idx"""
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError(
+                    "absolute value of index should not exceed dataset length"
+                )
+            idx = len(self) + idx
         s, e = self.pos[idx]
         b = self.fasta[s:e]  # mmap go to disk
         m = EOL.search(b)
@@ -129,19 +135,27 @@ class RandomFasta(Sequence[Record]):
 class CollectionFasta(Sequence[Record]):
     """Multiple memory mapped fasta files"""
 
+    # see also https://pytorch.org/docs/stable/_modules/torch/utils/data/dataset.html#ConcatDataset
+
     def __init__(
         self, fasta_files: Sequence[os.PathLike | str], encoding: str | None = None
     ):
         self.fastas = [RandomFasta(f, encoding=encoding) for f in fasta_files]
+        assert len(self.fastas) > 0, "list of fasta files should not be empty"
         _cumsum = []
         cumsum = 0
         for f in self.fastas:
             cumsum += len(f)
             _cumsum.append(cumsum)
         self._cumsum = _cumsum
-        self._len = cumsum
 
     def _map_idx(self, idx: int) -> tuple[int, RandomFasta]:
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError(
+                    "absolute value of index should not exceed dataset length"
+                )
+            idx = len(self) + idx
         i = bisect.bisect_right(self._cumsum, idx)
         if i > len(self._cumsum):
             raise IndexError("list out of range")
@@ -153,7 +167,7 @@ class CollectionFasta(Sequence[Record]):
             yield self._map_idx(idx)
 
     def __len__(self) -> int:
-        return self._len
+        return self._cumsum[-1]
 
     def get_idx(self, idx: int) -> Record:
         """Given an integer ID return the Record"""
