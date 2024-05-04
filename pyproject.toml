@@ -1,17 +1,18 @@
 [tool.poetry]
 name = "nnfasta"
-version = "0.1.12"
+version = "0.1.13"
 description = "Neural Net efficient Fasta"
 authors = ["arabidopsis <ian.castleden@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8"
+python = ">=3.9"
 
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
+biopython = "^1.83"
 
 [build-system]
 requires = ["poetry-core"]

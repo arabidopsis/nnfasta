@@ -49,7 +49,7 @@ def _test():
         recs = [full[i] for i in rl]
         for rec, r in zip(recs, rs):
             _ok(r, rec)
-    print("OK")
+    print(f"OK {total}")
 
 
 _test()
