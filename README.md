@@ -17,7 +17,7 @@ Install:
 pip install nnfasta
 ```
 
-**There are no dependencies.**
+**There are no dependencies.**, you just need a modern (>= 3.9) python.
 
 ## Usage
 
