@@ -1,7 +1,7 @@
 import sys
 import random
-from nnfasta import nnfastas
 from Bio import SeqIO
+from nnfasta import nnfastas
 
 
 def _ok(r, rec):
@@ -14,7 +14,7 @@ def _test():
 
     ffs = sys.argv[1:]
     if not ffs:
-        print("no fasta files")
+        print("no fasta files specified")
         return
 
     fasta = nnfastas(ffs)
@@ -24,13 +24,13 @@ def _test():
         with open(ff, encoding="utf8") as h:
             full.extend(SeqIO.parse(h, "fasta"))
 
-    assert len(full) == len(fasta)
+    total = len(full)
+    assert total == len(fasta)
 
     for i, rec in enumerate(full):
         r = fasta[i]
         _ok(r, rec)
 
-    total = len(full)
     for s, e in [
         (s, random.randint(s + 1, total))
         for s in random.sample(range(0, total), min(2000, total))

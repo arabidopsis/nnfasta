@@ -84,7 +84,7 @@ class RandomFasta(Sequence[Record]):
         return list(zip(start, end))
 
     def get_idx(self, idx: int) -> Record:
-        """get Record for idx"""
+        """get Record for index"""
         if idx < 0:
             if -idx > len(self):
                 raise ValueError(
