@@ -52,14 +52,14 @@ class Record:
         """SeqRecord letter_annotations"""
         return {}
 
-    def format(self, fmt: str = "fasta") -> str:
+    def format(self, fmt: str) -> str:
         """format record as FASTA"""
         from itertools import batched
 
         if fmt.lower() != "fasta":
             raise ValueError("can only format as FASTA")
         s = "\n".join("".join(s) for s in batched(self.seq, 80))
-        return f">{self.description}\n{s}"
+        return f">{self.description}\n{s}\n"
 
     def islower(self) -> bool:
         """Is sequence in lowercase"""
