@@ -88,4 +88,6 @@ train_data, test_data = torch.utils.data.random_split(dataset, [.9, .1])
 
 ```
 
+See the pytorch `Subset` logic [here](https://pytorch.org/docs/stable/data.html#torch.utils.data.Subset)
+
 Enjoy peps!
