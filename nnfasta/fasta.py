@@ -2,6 +2,7 @@ import bisect
 import mmap
 import re
 import os
+import io
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Iterator, overload, TypeAlias, cast, IO
@@ -40,6 +41,12 @@ def remove_white(s: bytes) -> bytes:
     return WHITE.sub(b"", s)
 
 
+def isopen(obj: Sequence[Fasta] | Fasta) -> bool:
+    """check if an object is an open file or not"""
+    # return hasattr(obj, 'close')
+    return isinstance(obj, io.IOBase)
+
+
 def nnfastas(
     fasta_file_or_bytes: Sequence[Fasta] | Fasta, encoding: str | None = None
 ) -> Sequence[Record]:
@@ -58,16 +65,17 @@ def nnfastas(
 
     A ``Sequence[Record]`` object.
     """
+    # WARNING isinstance("string", Sequence) is True
+    # and isinstance(b"string", Sequence) is True
     if not fasta_file_or_bytes:
         raise ValueError("no fasta files!")
-    if isinstance(fasta_file_or_bytes, (os.PathLike, str, bytes)) or hasattr(
-        fasta_file_or_bytes, "close"
-    ):
-        assert not isinstance(fasta_file_or_bytes, Sequence)
-        fasta_file_or_bytes = [fasta_file_or_bytes]
+
+    if isinstance(fasta_file_or_bytes, (os.PathLike, str, bytes, io.IOBase)):
+        fasta_file_or_bytes = [fasta_file_or_bytes] # type: ignore
+    assert isinstance(fasta_file_or_bytes, Sequence)
     if len(fasta_file_or_bytes) == 1:
-        return RandomFasta(fasta_file_or_bytes[0], encoding=encoding)
-    return CollectionFasta(fasta_file_or_bytes, encoding=encoding)
+        return RandomFasta(fasta_file_or_bytes[0], encoding=encoding) # type: ignore
+    return CollectionFasta(fasta_file_or_bytes, encoding=encoding) # type: ignore
 
 
 class RandomFasta(Sequence[Record]):
@@ -87,7 +95,7 @@ class RandomFasta(Sequence[Record]):
             self.fasta = fasta_file_or_bytes
             self.fp = None
         else:
-            self.isopen = hasattr(fasta_file_or_bytes, "close")
+            self.isopen = isopen(fasta_file_or_bytes)
             if self.isopen:
                 self.fp = cast(IO[bytes], fasta_file_or_bytes)
             else:
@@ -104,8 +112,8 @@ class RandomFasta(Sequence[Record]):
             self.fp = None
 
     def _find_pos(self) -> array.ArrayType:
-        f = [(h.start(), h.end()) for h in PREFIX.finditer(self.fasta)]
-        end, start = zip(*f)
+        end, start = zip(*((h.start(), h.end()) for h in PREFIX.finditer(self.fasta)))
+
         end = end[1:] + (len(self.fasta),)
         # we return an array so that
         # we have fewer refcounts
@@ -114,19 +122,15 @@ class RandomFasta(Sequence[Record]):
     def get_idx(self, idx: int) -> Record:
         """get Record for index"""
         if idx < 0:
-            if -idx > len(self):
-                raise ValueError(
-                    "absolute value of index should not exceed dataset length"
-                )
-            idx = len(self) + idx
-        jdx = 2 * idx
-        s, e = self._pos[jdx], self._pos[jdx + 1]
+            idx = len(self) - ((-idx) % len(self))
+        idx = 2 * idx
+        s, e = self._pos[idx], self._pos[idx + 1]
         b = self.fasta[s:e]  # mmap goes to disk
         m = EOL.search(b)
         if not m:
             raise ValueError(f"not a fasta file: {str(b)}")
         e = m.start()
-        desc = b[0:e]
+        desc = b[:e]
         if b" " in desc:
             sid, _ = desc.split(b" ", maxsplit=1)
         else:
@@ -233,8 +237,11 @@ class CollectionFasta(Sequence[Record]):
         )
 
 
-class LazyFasta(Sequence[Record]):
-    """Return sequence records from a list of indicies"""
+class SubsetFasta(Sequence[Record]):
+    """Return sequence records from a list of indicies.
+    
+    See https://pytorch.org/docs/stable/data.html#torch.utils.data.Subset
+    """
 
     def __init__(self, dataset: Sequence[Record], indexes: Sequence[int]):
         """Use index to create a new dataset from another"""

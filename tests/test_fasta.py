@@ -18,17 +18,21 @@ def _test():
         return
 
     fasta = nnfastas(ffs)
+    print("checking list of filenames")
     _check(ffs, fasta)
 
     # check raw bytes
     blist = [open(f, "rb").read() for f in ffs]
     fasta = nnfastas(blist)
+    print("checking list of bytes")
     _check(ffs, fasta)
 
     # check open files
     iolist = [open(f, "rb") for f in ffs]
     fasta = nnfastas(iolist)
+    print("checking list of open files")
     _check(ffs, fasta)
+    print("done.")
 
 
 def _check(ffs, fasta):

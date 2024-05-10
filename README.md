@@ -1,17 +1,22 @@
 # nnfasta
 
-Neural Net efficient fasta Dataset for Training.
+Lightweight Neural Net efficient FASTA dataset suitable for training.
 
 Should be memory efficient across process boundaries.
-So useful as input to torch/tensorflow dataloaders etc.
+So useful as input to torch/tensorflow dataloaders with multiple workers etc.
 
 Presents a list of fasta files as a simple `abc.Sequence`
 so you can inquire about `len(dataset)` and retrieve
-`Record`s with `dataset[i]`
+`Record`s randomly with `dataset[i]`
+
+Uses Python's `mmap.mmap` under the hood.
+
+The underlying FASTA's should be "well formed" since there is
+minimal sanity checking done.
 
 ## Install
 
-Install:
+Install with:
 
 ```bash
 pip install nnfasta
@@ -63,10 +68,10 @@ bytes in the file or an open file pointer (opened with `mode="rb"`)
 
 ## Test and Train Split best practice
 
-Use `LazyFasta`
+Use `SubsetFasta`
 
 ```python
-from nnfasta import nnfastas, LazyFasta
+from nnfasta import nnfastas, SubsetFasta
 from sklearn.model_selection import train_test_split
 
 dataset = nnfastas(['athaliana.fasta','triticum.fasta','zmays.fasta'])
@@ -74,8 +79,8 @@ train_idx, test_idx = train_test_split(range(len(dataset)),test_size=.1,shuffle=
 
 # these are still Sequence[Record] objects.
 
-train_data = LazyFasta(datset, train_idx)
-test_data = LazyFasta(datset, test_idx)
+train_data = SubsetFasta(dataset, train_idx)
+test_data = SubsetFasta(dataset, test_idx)
 
 # *OR* ... this is basically the same
 import torch
