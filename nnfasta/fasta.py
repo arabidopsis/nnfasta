@@ -4,15 +4,16 @@ import re
 import os
 import io
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Iterator, overload, TypeAlias, cast, IO
+from dataclasses import dataclass, replace
+from typing import Iterator, overload, TypeAlias, cast, IO, Any
 import array
 
 # a "fasta" file is a Path or filename or the actual bytes or an
 # open file
 Fasta: TypeAlias = os.PathLike | str | bytes | IO[bytes]
 
-
+# This mimics biopython's SeqRecord. Except that `seq`
+# is just a string and not a `Seq`
 @dataclass
 class Record:
     """Mimics biopython Record"""
@@ -24,10 +25,57 @@ class Record:
     seq: str
     """Sequence stripped of whitespace and uppercased"""
 
+    # just fake SeqRecord
+    # still missing count(sub) translate() reverse_complement()
     @property
     def name(self) -> str:
         """same as ID"""
         return self.id
+
+    @property
+    def features(self) -> list[Any]:
+        """SeqRecord list of features"""
+        return []
+
+    @property
+    def dbxrefs(self) -> list[Any]:
+        """SeqRecord list of dbxrefs"""
+        return []
+
+    @property
+    def annotations(self) -> dict[str, Any]:
+        """SeqRecord dict of annotations"""
+        return {}
+
+    @property
+    def letter_annotations(self) -> dict[str, Any]:
+        """SeqRecord letter_annotations"""
+        return {}
+
+    def format(self, fmt: str = "fasta") -> str:
+        """format record as FASTA"""
+        from itertools import batched
+
+        if fmt.lower() != "fasta":
+            raise ValueError("can only format as FASTA")
+        s = "\n".join("".join(s) for s in batched(self.seq, 80))
+        return f">{self.description}\n{s}"
+
+    def islower(self) -> bool:
+        """Is sequence in lowercase"""
+        return self.seq.lower() == self.seq
+
+    def isupper(self) -> bool:
+        """is sequence in uppercalse"""
+        return self.seq.upper() == self.seq
+
+    def upper(self) -> "Record":
+        """Uppercase sequence"""
+        return replace(self, seq=self.seq.upper())
+
+    def lower(self) -> "Record":
+        """Lowercase sequence"""
+        return replace(self, seq=self.seq.lower())
 
 
 PREFIX = re.compile(b"(\n>|\r>|^>)", re.M)

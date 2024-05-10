@@ -43,7 +43,7 @@ print('sequence', rec.id, rec.description, rec.seq)
 the fasta files. Also files of zero length will be rejected
 by `mmap`.
 
-A `Record` mimics biopython's `Record` and is simply:
+A `Record` mimics biopython's [`SeqRecord`](https://biopython.org/wiki/SeqRecord) and is simply:
 
 ```python
 @dataclass
