@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nnfasta"
-version = "0.1.18"
+version = "0.1.19"
 description = "Neural Net efficient FASTA"
 authors = ["arabidopsis <ian.castleden@gmail.com>"]
 license = "MIT"

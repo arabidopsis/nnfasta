@@ -12,6 +12,7 @@ import array
 # open file
 Fasta: TypeAlias = os.PathLike | str | bytes | IO[bytes]
 
+
 # This mimics biopython's SeqRecord. Except that `seq`
 # is just a string and not a `Seq`
 @dataclass

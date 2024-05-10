@@ -60,6 +60,9 @@ class Record:
         return self.id
 ```
 
+The major difference is that `seq` is just a simple `str` not a biopython `Seq` object
+(We just don't want the `Bio` dependency -- `nnfasta` has *no* dependencies).
+
 ## Arguments
 
 You can give `nnfastas` either a filename, a `Path`, the actual
