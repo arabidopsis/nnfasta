@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import Iterator, overload, TypeAlias, cast, IO
 import array
 
+# a "fasta" file is a Path or filename or the actual bytes or an
+# open file
 Fasta: TypeAlias = os.PathLike | str | bytes | IO[bytes]
 
 
@@ -89,21 +91,24 @@ class RandomFasta(Sequence[Record]):
             if self.isopen:
                 self.fp = cast(IO[bytes], fasta_file_or_bytes)
             else:
-                self.fp = open(fasta_file_or_bytes, "rb") # type: ignore
+                self.fp = open(fasta_file_or_bytes, "rb")  # type: ignore
             self.fasta = cast(
                 bytes, mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ)
             )
         self._pos = self._find_pos()
 
     def __del__(self):
-        if self is not None and self.fp and not self.isopen:
-            self.fp.close()
+        if self is not None:
+            if self.fp and not self.isopen:
+                self.fp.close()
             self.fp = None
 
     def _find_pos(self) -> array.ArrayType:
         f = [(h.start(), h.end()) for h in PREFIX.finditer(self.fasta)]
         end, start = zip(*f)
         end = end[1:] + (len(self.fasta),)
+        # we return an array so that
+        # we have fewer refcounts
         return array.array("Q", [a for se in zip(start, end) for a in se])
 
     def get_idx(self, idx: int) -> Record:
@@ -116,7 +121,7 @@ class RandomFasta(Sequence[Record]):
             idx = len(self) + idx
         jdx = 2 * idx
         s, e = self._pos[jdx], self._pos[jdx + 1]
-        b = self.fasta[s:e]  # mmap go to disk
+        b = self.fasta[s:e]  # mmap goes to disk
         m = EOL.search(b)
         if not m:
             raise ValueError(f"not a fasta file: {str(b)}")
