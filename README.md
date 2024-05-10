@@ -22,7 +22,7 @@ Install with:
 pip install nnfasta
 ```
 
-**There are no dependencies.**, you just need a modern (>= 3.9) python.
+**There are no dependencies**, you just need a modern (>= 3.9) python.
 
 ## Usage
 
@@ -64,7 +64,7 @@ class Record:
 
 You can give `nnfastas` either a filename, a `Path`, the actual
 bytes in the file or an open file pointer (opened with `mode="rb"`)
-*OR* a list of these things.
+_OR_ a list of these things.
 
 ## Test and Train Split best practice
 
