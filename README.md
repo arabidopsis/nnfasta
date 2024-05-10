@@ -66,6 +66,12 @@ You can give `nnfastas` either a filename, a `Path`, the actual
 bytes in the file or an open file pointer (opened with `mode="rb"`)
 _OR_ a list of these things.
 
+## Encoding
+
+The files are assumed to be encoded as "`ASCII`". If this is not the
+case the `nnfastas` accepts an `encoding` argument. All the files
+presented to `nnfastas` are assumed to be similarly encoded.
+
 ## Test and Train Split best practice
 
 Use `SubsetFasta`

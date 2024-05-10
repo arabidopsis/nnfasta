@@ -48,7 +48,10 @@ def isopen(obj: Sequence[Fasta] | Fasta) -> bool:
 
 
 def nnfastas(
-    fasta_file_or_bytes: Sequence[Fasta] | Fasta, encoding: str | None = None
+    fasta_file_or_bytes: Sequence[Fasta] | Fasta,
+    *,
+    encoding: str | None = None,
+    errors: str | None = None,
 ) -> Sequence[Record]:
     """Given a sequence of fasta files return an indexable (list like) Fasta object.
 
@@ -59,6 +62,8 @@ def nnfastas(
         sequence of Fasta files to mmap. (Can be the raw bytes from the file too or the 'rb' opened file!)
     encoding: str, optional
         text encoding of these files [default: ascii]
+    errors: str, optional
+        how to treat decoding errors. default='strict'
 
     Returns
     -------
@@ -71,25 +76,29 @@ def nnfastas(
         raise ValueError("no fasta files!")
 
     if isinstance(fasta_file_or_bytes, (os.PathLike, str, bytes, io.IOBase)):
-        fasta_file_or_bytes = [fasta_file_or_bytes] # type: ignore
+        fasta_file_or_bytes = [fasta_file_or_bytes]  # type: ignore
     assert isinstance(fasta_file_or_bytes, Sequence)
     if len(fasta_file_or_bytes) == 1:
-        return RandomFasta(fasta_file_or_bytes[0], encoding=encoding) # type: ignore
-    return CollectionFasta(fasta_file_or_bytes, encoding=encoding) # type: ignore
+        return RandomFasta(fasta_file_or_bytes[0], encoding=encoding, errors=errors)  # type: ignore
+    return CollectionFasta(fasta_file_or_bytes, encoding=encoding, errors=errors)  # type: ignore
 
 
 class RandomFasta(Sequence[Record]):
     """Memory mapped fasta file."""
 
     ENCODING = "ascii"
+    ERRORS = "strict"
 
     def __init__(
         self,
         fasta_file_or_bytes: Fasta,
+        *,
         encoding: str | None = None,
+        errors: str | None = None,
     ):
 
         self.encoding = encoding or self.ENCODING
+        self.errors = errors or self.ERRORS
         if isinstance(fasta_file_or_bytes, bytes):
             self.isopen = False
             self.fasta = fasta_file_or_bytes
@@ -138,10 +147,11 @@ class RandomFasta(Sequence[Record]):
         seq = b[e + 1 :]
         seq = remove_white(seq)
         encoding = self.encoding
+        errors = self.errors
         return Record(
-            sid.decode(encoding),
-            desc.strip().decode(encoding),
-            seq.upper().decode(encoding),
+            sid.decode(encoding, errors=errors),
+            desc.strip().decode(encoding, errors=errors),
+            seq.upper().decode(encoding, errors=errors),
         )
 
     def __len__(self) -> int:
@@ -176,9 +186,14 @@ class CollectionFasta(Sequence[Record]):
     def __init__(
         self,
         fasta_file_or_bytes: Sequence[Fasta],
+        *,
         encoding: str | None = None,
+        errors: str | None = None,
     ):
-        self.fastas = [RandomFasta(f, encoding=encoding) for f in fasta_file_or_bytes]
+        self.fastas = [
+            RandomFasta(f, encoding=encoding, errors=errors)
+            for f in fasta_file_or_bytes
+        ]
         assert len(self.fastas) > 0, "list of fasta files should not be empty"
         _cumsum = []
         cumsum = 0
@@ -239,7 +254,7 @@ class CollectionFasta(Sequence[Record]):
 
 class SubsetFasta(Sequence[Record]):
     """Return sequence records from a list of indicies.
-    
+
     See https://pytorch.org/docs/stable/data.html#torch.utils.data.Subset
     """
 
