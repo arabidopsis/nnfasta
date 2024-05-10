@@ -4,7 +4,10 @@ import re
 import os
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Iterator, overload
+from typing import Iterator, overload, TypeAlias, cast, IO
+import array
+
+Fasta: TypeAlias = os.PathLike | str | bytes | IO[bytes]
 
 
 @dataclass
@@ -36,15 +39,15 @@ def remove_white(s: bytes) -> bytes:
 
 
 def nnfastas(
-    fasta_files: Sequence[os.PathLike | str], encoding: str | None = None
+    fasta_file_or_bytes: Sequence[Fasta] | Fasta, encoding: str | None = None
 ) -> Sequence[Record]:
     """Given a sequence of fasta files return an indexable (list like) Fasta object.
 
     Parameters
     ----------
 
-    fasta_files: Sequence[PathLike | str]
-        sequence of Fasta files to mmap.
+    fasta_files: Sequence[PathLike | str | bytes | IO[bytes]] | (PathLike| str | bytes | IO[bytes])
+        sequence of Fasta files to mmap. (Can be the raw bytes from the file too or the 'rb' opened file!)
     encoding: str, optional
         text encoding of these files [default: ascii]
 
@@ -53,11 +56,16 @@ def nnfastas(
 
     A ``Sequence[Record]`` object.
     """
-    if not fasta_files:
+    if not fasta_file_or_bytes:
         raise ValueError("no fasta files!")
-    if len(fasta_files) == 1:
-        return RandomFasta(fasta_files[0], encoding=encoding)
-    return CollectionFasta(fasta_files, encoding=encoding)
+    if isinstance(fasta_file_or_bytes, (os.PathLike, str, bytes)) or hasattr(
+        fasta_file_or_bytes, "close"
+    ):
+        assert not isinstance(fasta_file_or_bytes, Sequence)
+        fasta_file_or_bytes = [fasta_file_or_bytes]
+    if len(fasta_file_or_bytes) == 1:
+        return RandomFasta(fasta_file_or_bytes[0], encoding=encoding)
+    return CollectionFasta(fasta_file_or_bytes, encoding=encoding)
 
 
 class RandomFasta(Sequence[Record]):
@@ -65,23 +73,37 @@ class RandomFasta(Sequence[Record]):
 
     ENCODING = "ascii"
 
-    def __init__(self, fasta_file: os.PathLike | str, encoding: str | None = None):
+    def __init__(
+        self,
+        fasta_file_or_bytes: Fasta,
+        encoding: str | None = None,
+    ):
 
         self.encoding = encoding or self.ENCODING
-        self.fp = open(fasta_file, "rb")  # pylint: disable=consider-using-with
-        self.fasta = mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ)
-        self.pos = self._find_pos()
+        if isinstance(fasta_file_or_bytes, bytes):
+            self.fasta = fasta_file_or_bytes
+            self.fp = None
+        else:
+            self.fp = (
+                open(fasta_file_or_bytes, "rb")
+                if not hasattr(fasta_file_or_bytes, "close")
+                else cast(IO[bytes], fasta_file_or_bytes)
+            )
+            self.fasta = cast(
+                bytes, mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ)
+            )
+        self._pos = self._find_pos()
 
     def __del__(self):
         if self is not None and self.fp:
             self.fp.close()
             self.fp = None
 
-    def _find_pos(self) -> list[tuple[int, int]]:
+    def _find_pos(self) -> array.ArrayType:
         f = [(h.start(), h.end()) for h in PREFIX.finditer(self.fasta)]
         end, start = zip(*f)
         end = end[1:] + (len(self.fasta),)
-        return list(zip(start, end))
+        return array.array("Q", [a for se in zip(start, end) for a in se])
 
     def get_idx(self, idx: int) -> Record:
         """get Record for index"""
@@ -91,14 +113,18 @@ class RandomFasta(Sequence[Record]):
                     "absolute value of index should not exceed dataset length"
                 )
             idx = len(self) + idx
-        s, e = self.pos[idx]
+        jdx = 2 * idx
+        s, e = self._pos[jdx], self._pos[jdx + 1]
         b = self.fasta[s:e]  # mmap go to disk
         m = EOL.search(b)
         if not m:
             raise ValueError(f"not a fasta file: {str(b)}")
         e = m.start()
         desc = b[0:e]
-        sid, _ = desc.split(b" ", maxsplit=1)
+        if b" " in desc:
+            sid, _ = desc.split(b" ", maxsplit=1)
+        else:
+            sid = desc
         seq = b[e + 1 :]
         seq = remove_white(seq)
         encoding = self.encoding
@@ -109,7 +135,7 @@ class RandomFasta(Sequence[Record]):
         )
 
     def __len__(self) -> int:
-        return len(self.pos)
+        return len(self._pos) // 2
 
     def __getitems__(self, idx: list[int]) -> list[Record]:
         """torch extention"""
@@ -138,9 +164,11 @@ class CollectionFasta(Sequence[Record]):
     # see also https://pytorch.org/docs/stable/_modules/torch/utils/data/dataset.html#ConcatDataset
 
     def __init__(
-        self, fasta_files: Sequence[os.PathLike | str], encoding: str | None = None
+        self,
+        fasta_file_or_bytes: Sequence[Fasta],
+        encoding: str | None = None,
     ):
-        self.fastas = [RandomFasta(f, encoding=encoding) for f in fasta_files]
+        self.fastas = [RandomFasta(f, encoding=encoding) for f in fasta_file_or_bytes]
         assert len(self.fastas) > 0, "list of fasta files should not be empty"
         _cumsum = []
         cumsum = 0

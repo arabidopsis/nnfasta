@@ -18,7 +18,22 @@ def _test():
         return
 
     fasta = nnfastas(ffs)
+    _check(ffs, fasta)
 
+    blist = [open(f, "rb").read() for f in ffs]
+
+    fasta = nnfastas(blist)
+
+    _check(ffs, fasta)
+
+    iolist = [open(f, "rb") for f in ffs]
+
+    fasta = nnfastas(iolist)
+
+    _check(ffs, fasta)
+
+
+def _check(ffs, fasta):
     full = []
     for ff in ffs:
         with open(ff, encoding="utf8") as h:

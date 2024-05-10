@@ -55,6 +55,12 @@ class Record:
         return self.id
 ```
 
+## Arguments
+
+You can give `nnfastas` either a filename, a `Path`, the actual
+bytes in the file or an open file pointer (opened with `mode="rb"`)
+*OR* a list of these things.
+
 ## Test and Train Split best practice
 
 Use `LazyFasta`
