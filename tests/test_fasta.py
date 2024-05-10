@@ -20,16 +20,14 @@ def _test():
     fasta = nnfastas(ffs)
     _check(ffs, fasta)
 
+    # check raw bytes
     blist = [open(f, "rb").read() for f in ffs]
-
     fasta = nnfastas(blist)
-
     _check(ffs, fasta)
 
+    # check open files
     iolist = [open(f, "rb") for f in ffs]
-
     fasta = nnfastas(iolist)
-
     _check(ffs, fasta)
 
 

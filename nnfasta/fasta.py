@@ -81,21 +81,22 @@ class RandomFasta(Sequence[Record]):
 
         self.encoding = encoding or self.ENCODING
         if isinstance(fasta_file_or_bytes, bytes):
+            self.isopen = False
             self.fasta = fasta_file_or_bytes
             self.fp = None
         else:
-            self.fp = (
-                open(fasta_file_or_bytes, "rb")
-                if not hasattr(fasta_file_or_bytes, "close")
-                else cast(IO[bytes], fasta_file_or_bytes)
-            )
+            self.isopen = hasattr(fasta_file_or_bytes, "close")
+            if self.isopen:
+                self.fp = cast(IO[bytes], fasta_file_or_bytes)
+            else:
+                self.fp = open(fasta_file_or_bytes, "rb") # type: ignore
             self.fasta = cast(
                 bytes, mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ)
             )
         self._pos = self._find_pos()
 
     def __del__(self):
-        if self is not None and self.fp:
+        if self is not None and self.fp and not self.isopen:
             self.fp.close()
             self.fp = None
 
