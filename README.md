@@ -23,7 +23,7 @@ Install with:
 pip install nnfasta
 ```
 
-**There are no dependencies**, you just need a modern (>= 3.9) python.
+**There are no dependencies**, you just need a modern (>= 3.9) python (< 12K of code).
 
 ## Usage
 
