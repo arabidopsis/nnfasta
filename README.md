@@ -68,7 +68,15 @@ The major difference is that `seq` is just a simple `str` not a biopython `Seq` 
 
 You can give `nnfastas` either a filename, a `Path`, the actual
 bytes in the file or an open file pointer (opened with `mode="rb"`)
-_OR_ a list of these things.
+_OR_ a list of these things. e.g:
+
+```python
+
+from nnfasta import nnfastas
+my = "my.fasta"
+fa = nnfastas([my, open(my mode="rb"),
+            open(my, mode="rb").read() ])
+```
 
 ## Encoding
 
