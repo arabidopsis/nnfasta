@@ -62,7 +62,7 @@ class Record:
 ```
 
 The major difference is that `seq` is just a simple `str` not a biopython `Seq` object
-(We just don't want the `Bio` dependency -- `nnfasta` has *no* dependencies).
+(We just don't want the `Bio` dependency -- `nnfasta` has _no_ dependencies).
 
 ## Arguments
 
@@ -74,7 +74,8 @@ _OR_ a list of these things.
 
 The files are assumed to be encoded as "`ASCII`". If this is not the
 case then `nnfastas` accepts an `encoding` argument. All the files
-presented to `nnfastas` are assumed to be similarly encoded.
+presented to `nnfastas` are assumed to be similarly encoded. You can
+alter the decoding with the `errors` keyword (default=`strict`).
 
 ## Test and Train Split best practice
 
