@@ -25,7 +25,16 @@ Fasta: TypeAlias = os.PathLike | str | bytes | IO[bytes]
 # is just a string and not a `Seq`
 @dataclass
 class Record:
-    """Mimics biopython Record"""
+    """Mimics biopython SeqRecord.
+
+    The main difference is that `seq` is just a simple string.
+    The class is also missing `translate()` and `reverse_complement()`
+    functions. Really get biopython if you need these!
+
+    ``from Bio.SeqRecord import SeqRecord
+    from Bio.Seq import Seq
+    rec = SeqRecord(id=seq.id, description=rec.description, seq=Seq(rec.seq))``
+    """
 
     id: str
     """Sequence ID"""
@@ -35,11 +44,18 @@ class Record:
     """Sequence stripped of whitespace and uppercased"""
 
     # just fake SeqRecord
-    # still missing count(sub) translate() reverse_complement()
+    # still missing translate() reverse_complement()
     @property
     def name(self) -> str:
         """same as ID"""
         return self.id
+
+    def to_rec(self):
+        """Return a biopython SeqRecord (if biopython is installed)"""
+        from Bio.SeqRecord import SeqRecord
+        from Bio.Seq import Seq
+
+        return SeqRecord(id=self.id, description=self.description, seq=Seq(self.seq))
 
     @property
     def features(self) -> list[Any]:
@@ -85,6 +101,16 @@ class Record:
     def lower(self) -> Record:
         """Lowercase sequence"""
         return replace(self, seq=self.seq.lower())
+
+    def count(self, sub: bytes, start: int | None = None, end: int | None = None):
+        """Return the number of non-overlapping occurrences of sub in data[start:end].
+
+        Optional arguments start and end are interpreted as in slice notation.
+        This method behaves as the count method of Python strings.
+        """
+        if isinstance(sub, str):
+            sub = sub.encode("ASCII")
+        return self.seq.encode("ASCII").count(sub, start, end)
 
 
 PREFIX = re.compile(b"(\n>|\r>|^>)", re.M)

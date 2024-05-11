@@ -36,6 +36,9 @@ def _test():
     fasta = nnfastas(iolist)
     print("checking list of open files")
     _check(ffs, fasta)
+
+    print("checking to_rec")
+    _check2(ffs, fasta)
     print("done.")
 
 
@@ -71,6 +74,19 @@ def _check(ffs, fasta):
         for rec, r in zip(recs, rs):
             _ok(r, rec)
     print(f"OK {total}")
+
+
+def _check2(ffs: list[str], fasta):
+    full = []
+    for ff in ffs:
+        with open(ff, encoding="utf8") as h:
+            full.extend(SeqIO.parse(h, "fasta"))
+
+    for f1, f2 in zip(full, fasta):
+        s2 = f2.to_rec()
+        assert f1.id == s2.id
+        assert f1.seq == s2.seq
+        assert f1.description == s2.description
 
 
 _test()
