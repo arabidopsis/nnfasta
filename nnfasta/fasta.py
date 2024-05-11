@@ -16,6 +16,7 @@ from typing import Iterator
 from typing import overload
 from typing import TypeAlias
 
+
 # a "fasta" file is a Path or filename or the actual bytes or an
 # open file
 Fasta: TypeAlias = os.PathLike | str | bytes | IO[bytes]
@@ -45,6 +46,7 @@ class Record:
 
     # just fake SeqRecord
     # still missing translate() reverse_complement()
+    # and dunder calls
     @property
     def name(self) -> str:
         """same as ID"""
@@ -79,11 +81,15 @@ class Record:
 
     def format(self, fmt: str = "fasta") -> str:
         """format record as FASTA"""
+        return self.__format__(fmt)  # pylint: disable=unnecessary-dunder-call
+
+    def __format__(self, fmt: str) -> str:
+        """format record as FASTA"""
         from itertools import batched
 
         if fmt.lower() != "fasta":
             raise ValueError("can only format as FASTA")
-        s = "\n".join("".join(s) for s in batched(self.seq, 80))
+        s = "\n".join("".join(s) for s in batched(self.seq, 60))
         return f">{self.description}\n{s}\n"
 
     def islower(self) -> bool:
@@ -264,6 +270,12 @@ class RandomFasta(Sequence[Record]):
             for i in range(idx.start, idx.stop or len(self), idx.step or 1)
         ]
 
+    def close(self) -> None:
+        """Close any open files"""
+        if self and self.fp is not None:
+            self.fp.close()
+            self.fp = None
+
 
 class CollectionFasta(Sequence[Record]):
     """Multiple memory mapped fasta files"""
@@ -335,6 +347,12 @@ class CollectionFasta(Sequence[Record]):
         return list(
             self._get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1)),
         )
+
+    def close(self) -> None:
+        """Close any open files"""
+        if self:
+            for b in self.fastas:
+                b.close()
 
 
 class SubsetFasta(Sequence[Record]):
