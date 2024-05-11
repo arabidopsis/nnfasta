@@ -1,6 +1,10 @@
-import sys
+from __future__ import annotations
+
 import random
+import sys
+
 from Bio import SeqIO
+
 from nnfasta import nnfastas
 
 

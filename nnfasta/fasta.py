@@ -1,12 +1,20 @@
-import bisect
-import mmap
-import re
-import os
-import io
-from collections.abc import Sequence
-from dataclasses import dataclass, replace
-from typing import Iterator, overload, TypeAlias, cast, IO, Any
+from __future__ import annotations
+
 import array
+import bisect
+import io
+import mmap
+import os
+import re
+from collections.abc import Sequence
+from dataclasses import dataclass
+from dataclasses import replace
+from typing import Any
+from typing import cast
+from typing import IO
+from typing import Iterator
+from typing import overload
+from typing import TypeAlias
 
 # a "fasta" file is a Path or filename or the actual bytes or an
 # open file
@@ -70,11 +78,11 @@ class Record:
         """is sequence in uppercalse"""
         return self.seq.upper() == self.seq
 
-    def upper(self) -> "Record":
+    def upper(self) -> Record:
         """Uppercase sequence"""
         return replace(self, seq=self.seq.upper())
 
-    def lower(self) -> "Record":
+    def lower(self) -> Record:
         """Lowercase sequence"""
         return replace(self, seq=self.seq.lower())
 
@@ -110,7 +118,7 @@ def nnfastas(
     fasta_files: Sequence[PathLike | str | bytes | IO[bytes]] | (PathLike| str | bytes | IO[bytes])
         sequence of Fasta files to mmap. (Can be the raw bytes from the file too or the 'rb' opened file!)
     encoding: str, optional
-        text encoding of these files [default: ascii]
+        text encoding of these files [default: 'ascii']
     errors: str, optional
         how to treat decoding errors. default='strict'
 
@@ -159,7 +167,8 @@ class RandomFasta(Sequence[Record]):
             else:
                 self.fp = open(fasta_file_or_bytes, "rb")  # type: ignore
             self.fasta = cast(
-                bytes, mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ)
+                bytes,
+                mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ),
             )
         self._pos = self._find_pos()
 
@@ -171,7 +180,6 @@ class RandomFasta(Sequence[Record]):
 
     def _find_pos(self) -> array.ArrayType:
         end, start = zip(*((h.start(), h.end()) for h in PREFIX.finditer(self.fasta)))
-
         end = end[1:] + (len(self.fasta),)
         # we return an array so that
         # we have fewer refcounts
@@ -216,6 +224,7 @@ class RandomFasta(Sequence[Record]):
     def __getitem__(self, idx: slice) -> list[Record]: ...
     @overload
     def __getitem__(self, idx: list[int]) -> list[Record]: ...
+
     def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:
         if isinstance(idx, int):
             return self.get_idx(idx)
@@ -253,11 +262,7 @@ class CollectionFasta(Sequence[Record]):
 
     def _map_idx(self, idx: int) -> tuple[int, RandomFasta]:
         if idx < 0:
-            if -idx > len(self):
-                raise ValueError(
-                    "absolute value of index should not exceed dataset length"
-                )
-            idx = len(self) + idx
+            idx = len(self) - ((-idx) % len(self))
         i = bisect.bisect_right(self._cumsum, idx)
         if i > len(self._cumsum):
             raise IndexError("list out of range")
@@ -291,13 +296,14 @@ class CollectionFasta(Sequence[Record]):
     def __getitem__(self, idx: slice) -> list[Record]: ...
     @overload
     def __getitem__(self, idx: list[int]) -> list[Record]: ...
+
     def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:  # type: ignore
         if isinstance(idx, int):
             return self.get_idx(idx)
         if isinstance(idx, list):
             return [self.get_idx(i) for i in idx]
         return list(
-            self.get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1))
+            self.get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1)),
         )
 
 
@@ -327,6 +333,7 @@ class SubsetFasta(Sequence[Record]):
     def __getitem__(self, idx: slice) -> list[Record]: ...
     @overload
     def __getitem__(self, idx: list[int]) -> list[Record]: ...
+
     def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:  # type: ignore
         index = self._indexes
         if isinstance(idx, int):
