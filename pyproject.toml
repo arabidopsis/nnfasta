@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "nnfasta"
 version = "0.1.30"
-description = "Neural Net efficient FASTA"
+description = "Lightweight Neural Net efficient FASTA"
 # authors = ["arabidopsis <ian.castleden@gmail.com>"]
 authors = ["Ian Castleden <ian.castleden@uwa.edu.au>"]
 license = "MIT"
