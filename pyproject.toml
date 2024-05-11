@@ -1,11 +1,12 @@
 [tool.poetry]
 name = "nnfasta"
-version = "0.1.24"
+version = "0.1.26"
 description = "Neural Net efficient FASTA"
 # authors = ["arabidopsis <ian.castleden@gmail.com>"]
 authors = ["Ian Castleden <ian.castleden@uwa.edu.au>"]
 license = "MIT"
 readme = "README.md"
+repository ="https://github.com/arabidopsis/nnfasta.git"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
