@@ -75,7 +75,7 @@ _OR_ a list of these things. e.g:
 from nnfasta import nnfastas
 my = "my.fasta"
 fa = nnfastas([my, open(my mode="rb"),
-            open(my, mode="rb").read() ])
+            open(my, mode="rb").read()])
 ```
 
 ## Encoding
