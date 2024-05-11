@@ -215,6 +215,8 @@ class RandomFasta(Sequence[Record]):
         """get Record for index"""
         if idx < 0:
             idx = len(self) - ((-idx) % len(self))
+        # else:
+        #     idx = idx % len(self)
         idx = 2 * idx
         s, e = self._pos[idx], self._pos[idx + 1]
         b = self.fasta[s:e]  # mmap goes to disk
@@ -278,7 +280,8 @@ class CollectionFasta(Sequence[Record]):
             RandomFasta(f, encoding=encoding, errors=errors)
             for f in fasta_file_or_bytes
         ]
-        assert len(self.fastas) > 0, "list of fasta files should not be empty"
+        if len(self.fastas) == 0:
+            raise ValueError("list of fasta files should not be empty")
         _cumsum = []
         cumsum = 0
         for f in self.fastas:
@@ -343,7 +346,8 @@ class SubsetFasta(Sequence[Record]):
         """Use index to create a new dataset from another"""
         self._dataset = dataset
         self._indexes = indexes
-        assert len(dataset) > max(self._indexes) and min(self._indexes) >= 0
+        if len(dataset) <= max(self._indexes) or min(self._indexes) < 0:
+            raise ValueError("indexes don't index dataset")
 
     def __len__(self) -> int:
         return len(self._indexes)
