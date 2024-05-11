@@ -77,7 +77,7 @@ class Record:
         """SeqRecord letter_annotations"""
         return {}
 
-    def format(self, fmt: str) -> str:
+    def format(self, fmt: str = "fasta") -> str:
         """format record as FASTA"""
         from itertools import batched
 
@@ -102,7 +102,7 @@ class Record:
         """Lowercase sequence"""
         return replace(self, seq=self.seq.lower())
 
-    def count(self, sub: bytes, start: int | None = None, end: int | None = None):
+    def count(self, sub: bytes | str, start: int | None = None, end: int | None = None):
         """Return the number of non-overlapping occurrences of sub in data[start:end].
 
         Optional arguments start and end are interpreted as in slice notation.
@@ -158,6 +158,7 @@ def nnfastas(
     if not fasta_file_or_bytes:
         raise ValueError("no fasta files!")
 
+    # current mypy just does not get it...
     if isinstance(fasta_file_or_bytes, (os.PathLike, str, bytes, io.IOBase)):
         fasta_file_or_bytes = [fasta_file_or_bytes]  # type: ignore
     assert isinstance(fasta_file_or_bytes, Sequence)
@@ -211,7 +212,7 @@ class RandomFasta(Sequence[Record]):
         # we have fewer refcounts
         return array.array("Q", [a for se in zip(start, end) for a in se])
 
-    def get_idx(self, idx: int) -> Record:
+    def _get_idx(self, idx: int) -> Record:
         """get Record for index"""
         if idx < 0:
             idx = len(self) - ((-idx) % len(self))
@@ -244,7 +245,7 @@ class RandomFasta(Sequence[Record]):
 
     def __getitems__(self, idx: list[int]) -> list[Record]:
         """torch extention"""
-        return [self.get_idx(i) for i in idx]
+        return [self._get_idx(i) for i in idx]
 
     @overload
     def __getitem__(self, idx: int) -> Record: ...
@@ -255,11 +256,11 @@ class RandomFasta(Sequence[Record]):
 
     def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:
         if isinstance(idx, int):
-            return self.get_idx(idx)
+            return self._get_idx(idx)
         if isinstance(idx, list):
-            return [self.get_idx(i) for i in idx]
+            return [self._get_idx(i) for i in idx]
         return [
-            self.get_idx(i)
+            self._get_idx(i)
             for i in range(idx.start, idx.stop or len(self), idx.step or 1)
         ]
 
@@ -305,19 +306,19 @@ class CollectionFasta(Sequence[Record]):
     def __len__(self) -> int:
         return self._cumsum[-1]
 
-    def get_idx(self, idx: int) -> Record:
+    def _get_idx(self, idx: int) -> Record:
         """Given an integer ID return the Record"""
         i, rf = self._map_idx(idx)
-        return rf.get_idx(i)
+        return rf._get_idx(i)  # pylint: disable=protected-access
 
-    def get_idxs(self, idxs: Sequence[int]) -> Iterator[Record]:
+    def _get_idxs(self, idxs: Sequence[int]) -> Iterator[Record]:
         """get Records for sequence of integers"""
         for i, rf in self._map_idxs(idxs):
-            yield rf.get_idx(i)
+            yield rf._get_idx(i)  # pylint: disable=protected-access
 
     def __getitems__(self, idx: list[int]) -> list[Record]:
         """torch extention"""
-        return [self.get_idx(i) for i in idx]
+        return [self._get_idx(i) for i in idx]
 
     @overload
     def __getitem__(self, idx: int) -> Record: ...
@@ -328,11 +329,11 @@ class CollectionFasta(Sequence[Record]):
 
     def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:  # type: ignore
         if isinstance(idx, int):
-            return self.get_idx(idx)
+            return self._get_idx(idx)
         if isinstance(idx, list):
-            return [self.get_idx(i) for i in idx]
+            return [self._get_idx(i) for i in idx]
         return list(
-            self.get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1)),
+            self._get_idxs(range(idx.start, idx.stop or len(self), idx.step or 1)),
         )
 
 
