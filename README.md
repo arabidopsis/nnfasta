@@ -109,4 +109,11 @@ train_data, test_data = torch.utils.data.random_split(dataset, [.9, .1])
 
 See the pytorch `Subset` logic [here](https://pytorch.org/docs/stable/data.html#torch.utils.data.Subset)
 
+
+## How it works
+
+We memory map the input files and use python's `re` package to scan the files
+for `b"\r>|\n>|^>"`  bytes from which we compute a start, end for each
+record and create an `array.array` (in memory).
+
 Enjoy peps!
