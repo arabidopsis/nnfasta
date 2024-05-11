@@ -4,6 +4,7 @@ Lightweight Neural Net efficient FASTA dataset suitable for training.
 
 Should be memory efficient across process boundaries.
 So useful as input to torch/tensorflow dataloaders with multiple workers etc.
+(see [this issue](https://github.com/pytorch/pytorch/issues/13246#issuecomment-905703662))
 
 Presents a list of fasta files as a simple `abc.Sequence`
 so you can inquire about `len(dataset)` and retrieve
