@@ -116,4 +116,7 @@ We memory map the input files and use python's `re` package to scan the files
 for `b"\r>|\n>|^>"`  bytes from which we compute a start, end for each
 record and create an `array.array` (in memory).
 
+The operating system will ensure that similar mmapped pages in different process
+are shared.
+
 Enjoy peps!

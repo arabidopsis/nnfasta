@@ -217,7 +217,7 @@ class RandomFasta(Sequence[Record]):
                 self.fp = open(fasta_file_or_bytes, "rb")  # type: ignore
             self.fasta = cast(
                 bytes,
-                mmap.mmap(self.fp.fileno(), 0, prot=mmap.PROT_READ),
+                mmap.mmap(self.fp.fileno(), 0, access=mmap.ACCESS_READ),
             )
         self._pos = self._find_pos()
 
