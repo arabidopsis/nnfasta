@@ -8,13 +8,30 @@ import os
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
-from dataclasses import replace
-from typing import Any
+from itertools import islice
 from typing import cast
 from typing import IO
+from typing import Iterable
 from typing import Iterator
 from typing import overload
 from typing import TypeAlias
+from typing import TypeVar
+
+T = TypeVar("T")
+
+
+# batched backport. Defined in itertools in 3.12
+def batched(iterable: Iterable[T], n: int) -> Iterator[tuple[T, ...]]:
+    """Batch incoming iterable"""
+    # batched('ABCDEFG', 3) → ABC DEF G
+    if n < 1:
+        raise ValueError("n must be at least one")
+    it = iter(iterable)
+    while True:
+        batch = tuple(islice(it, n))
+        if not batch:
+            break
+        yield batch
 
 
 # a "fasta" file is a Path or filename or the actual bytes or an
@@ -44,40 +61,40 @@ class Record:
     seq: str
     """Sequence stripped of whitespace and uppercased"""
 
-    # just fake SeqRecord
-    # still missing translate() reverse_complement()
-    # and dunder calls
     @property
     def name(self) -> str:
         """same as ID"""
         return self.id
 
-    def to_rec(self):
-        """Return a biopython SeqRecord (if biopython is installed)"""
-        from Bio.SeqRecord import SeqRecord
-        from Bio.Seq import Seq
+    # just fake SeqRecord
+    # still missing translate() reverse_complement()
+    # and dunder calls
+    # def to_rec(self):
+    #     """Return a biopython SeqRecord (if biopython is installed)"""
+    #     from Bio.SeqRecord import SeqRecord
+    #     from Bio.Seq import Seq
 
-        return SeqRecord(id=self.id, description=self.description, seq=Seq(self.seq))
+    #     return SeqRecord(id=self.id, description=self.description, seq=Seq(self.seq))
 
-    @property
-    def features(self) -> list[Any]:
-        """SeqRecord list of features"""
-        return []
+    # @property
+    # def features(self) -> list[Any]:
+    #     """SeqRecord list of features"""
+    #     return []
 
-    @property
-    def dbxrefs(self) -> list[Any]:
-        """SeqRecord list of dbxrefs"""
-        return []
+    # @property
+    # def dbxrefs(self) -> list[Any]:
+    #     """SeqRecord list of dbxrefs"""
+    #     return []
 
-    @property
-    def annotations(self) -> dict[str, Any]:
-        """SeqRecord dict of annotations"""
-        return {}
+    # @property
+    # def annotations(self) -> dict[str, Any]:
+    #     """SeqRecord dict of annotations"""
+    #     return {}
 
-    @property
-    def letter_annotations(self) -> dict[str, Any]:
-        """SeqRecord letter_annotations"""
-        return {}
+    # @property
+    # def letter_annotations(self) -> dict[str, Any]:
+    #     """SeqRecord letter_annotations"""
+    #     return {}
 
     def format(self, fmt: str = "fasta") -> str:
         """format record as FASTA"""
@@ -85,38 +102,37 @@ class Record:
 
     def __format__(self, fmt: str) -> str:
         """format record as FASTA"""
-        from itertools import batched
 
         if fmt.lower() != "fasta":
             raise ValueError("can only format as FASTA")
         s = "\n".join("".join(s) for s in batched(self.seq, 60))
         return f">{self.description}\n{s}\n"
 
-    def islower(self) -> bool:
-        """Is sequence in lowercase"""
-        return self.seq.lower() == self.seq
+    # def islower(self) -> bool:
+    #     """Is sequence in lowercase"""
+    #     return self.seq.lower() == self.seq
 
-    def isupper(self) -> bool:
-        """is sequence in uppercalse"""
-        return self.seq.upper() == self.seq
+    # def isupper(self) -> bool:
+    #     """is sequence in uppercalse"""
+    #     return self.seq.upper() == self.seq
 
-    def upper(self) -> Record:
-        """Uppercase sequence"""
-        return replace(self, seq=self.seq.upper())
+    # def upper(self) -> Record:
+    #     """Uppercase sequence"""
+    #     return replace(self, seq=self.seq.upper())
 
-    def lower(self) -> Record:
-        """Lowercase sequence"""
-        return replace(self, seq=self.seq.lower())
+    # def lower(self) -> Record:
+    #     """Lowercase sequence"""
+    #     return replace(self, seq=self.seq.lower())
 
-    def count(self, sub: bytes | str, start: int | None = None, end: int | None = None):
-        """Return the number of non-overlapping occurrences of sub in data[start:end].
+    # def count(self, sub: bytes | str, start: int | None = None, end: int | None = None):
+    #     """Return the number of non-overlapping occurrences of sub in data[start:end].
 
-        Optional arguments start and end are interpreted as in slice notation.
-        This method behaves as the count method of Python strings.
-        """
-        if isinstance(sub, str):
-            sub = sub.encode("ASCII")
-        return self.seq.encode("ASCII").count(sub, start, end)
+    #     Optional arguments start and end are interpreted as in slice notation.
+    #     This method behaves as the count method of Python strings.
+    #     """
+    #     if isinstance(sub, str):
+    #         sub = sub.encode("ASCII")
+    #     return self.seq.encode("ASCII").count(sub, start, end)
 
 
 PREFIX = re.compile(b"(\n>|\r>|^>)", re.M)
@@ -221,9 +237,12 @@ class RandomFasta(Sequence[Record]):
     def _get_idx(self, idx: int) -> Record:
         """get Record for index"""
         if idx < 0:
-            idx = len(self) - ((-idx) % len(self))
-        # else:
-        #     idx = idx % len(self)
+            n = len(self)
+            if idx < -n:
+                raise IndexError("index out of range")
+            idx = n + idx
+            # idx = len(self) - ((-idx) % len(self))
+
         idx = 2 * idx
         s, e = self._pos[idx], self._pos[idx + 1]
         b = self.fasta[s:e]  # mmap goes to disk
@@ -304,10 +323,14 @@ class CollectionFasta(Sequence[Record]):
 
     def _map_idx(self, idx: int) -> tuple[int, RandomFasta]:
         if idx < 0:
-            idx = len(self) - ((-idx) % len(self))
+            n = len(self)
+            if idx < -n:
+                raise IndexError("index out of range")
+            idx = n + idx
+            # idx = len(self) - ((-idx) % len(self))
         i = bisect.bisect_right(self._cumsum, idx)
         if i > len(self._cumsum):
-            raise IndexError("list out of range")
+            raise IndexError("index out of range")
         r = self._cumsum[i - 1] if i > 0 else 0
         return idx - r, self.fastas[i]
 

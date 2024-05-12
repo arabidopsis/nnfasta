@@ -10,7 +10,7 @@ from nnfasta import nnfastas
 
 def _ok(r, rec):
     assert r.id == rec.id
-    assert r.seq == str(rec.seq)
+    assert r.seq == str(rec.seq).upper()
     assert r.description == rec.description
 
 
@@ -82,11 +82,12 @@ def _check(fasta, full):
 def _check2(fasta, full):
 
     for f1, f2 in zip(full, fasta):
-        s2 = f2.to_rec()
-        assert f1.id == s2.id
-        assert f1.seq == s2.seq
-        assert f1.description == s2.description
+        # s2 = f2.to_rec()
+        # assert f1.id == s2.id
+        # assert f1.seq == s2.seq
+        # assert f1.description == s2.description
         s1, s2 = f1.format("fasta"), f2.format("fasta")
+        assert format(f1, "fasta") == format(f2, "fasta")
         assert s1 == s2, (s1, s2)
 
 
