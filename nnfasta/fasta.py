@@ -319,7 +319,7 @@ class CollectionFasta(Sequence[Record]):
         for f in self.fastas:
             cumsum += len(f)
             _cumsum.append(cumsum)
-        self._cumsum = _cumsum
+        self._cumsum = array.array("Q", _cumsum)
 
     def _map_idx(self, idx: int) -> tuple[int, RandomFasta]:
         if idx < 0:
