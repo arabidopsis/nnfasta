@@ -10,7 +10,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import islice
 from typing import cast
-from typing import IO
 from typing import Iterable
 from typing import Iterator
 from typing import overload
@@ -36,7 +35,10 @@ def batched(iterable: Iterable[T], n: int) -> Iterator[tuple[T, ...]]:
 
 # a "fasta" file is a Path or filename or the actual bytes or an
 # open file
-Fasta: TypeAlias = os.PathLike | str | bytes | IO[bytes]
+# WARNING isinstance("string", Sequence) is True
+# and isinstance(b"string", Sequence) is True
+Fasta: TypeAlias = os.PathLike | str | bytes | io.IOBase
+FType = (os.PathLike, str, bytes, io.IOBase)
 
 
 # This mimics biopython's SeqRecord. Except that `seq`
@@ -146,12 +148,6 @@ def remove_white(s: bytes) -> bytes:
     return WHITE.sub(b"", s)
 
 
-def isopen(obj: Sequence[Fasta] | Fasta) -> bool:
-    """check if an object is an open file or not"""
-    # return hasattr(obj, 'close')
-    return isinstance(obj, io.IOBase)
-
-
 def nnfastas(
     fasta_file_or_bytes: Sequence[Fasta] | Fasta,
     *,
@@ -181,12 +177,15 @@ def nnfastas(
         raise ValueError("no fasta files!")
 
     # current mypy just does not get it...
-    if isinstance(fasta_file_or_bytes, (os.PathLike, str, bytes, io.IOBase)):
-        fasta_file_or_bytes = [fasta_file_or_bytes]  # type: ignore
-    assert isinstance(fasta_file_or_bytes, Sequence)
+    if isinstance(fasta_file_or_bytes, FType):
+        fasta_file_or_bytes = [fasta_file_or_bytes]
+    assert isinstance(fasta_file_or_bytes, Sequence) and not isinstance(
+        fasta_file_or_bytes,
+        bytes,
+    )
     if len(fasta_file_or_bytes) == 1:
-        return RandomFasta(fasta_file_or_bytes[0], encoding=encoding, errors=errors)  # type: ignore
-    return CollectionFasta(fasta_file_or_bytes, encoding=encoding, errors=errors)  # type: ignore
+        return RandomFasta(fasta_file_or_bytes[0], encoding=encoding, errors=errors)
+    return CollectionFasta(fasta_file_or_bytes, encoding=encoding, errors=errors)
 
 
 class RandomFasta(Sequence[Record]):
@@ -205,16 +204,22 @@ class RandomFasta(Sequence[Record]):
 
         self.encoding = encoding or self.ENCODING
         self.errors = errors or self.ERRORS
+        self._fp: io.IOBase | None
         if isinstance(fasta_file_or_bytes, bytes):
             self.isopen = False
             self.fasta = fasta_file_or_bytes
             self._fp = None
         else:
-            self.isopen = isopen(fasta_file_or_bytes)
-            if self.isopen:
-                self._fp = cast(IO[bytes], fasta_file_or_bytes)
+            isopen = isinstance(fasta_file_or_bytes, io.IOBase)
+            if isopen:
+                assert isinstance(fasta_file_or_bytes, io.IOBase)  # mypy you dummy!
+                self._fp = fasta_file_or_bytes
             else:
-                self._fp = open(fasta_file_or_bytes, "rb")  # type: ignore
+                assert not isinstance(fasta_file_or_bytes, (io.IOBase, bytes))
+                self._fp = open(fasta_file_or_bytes, mode="rb")
+            assert self._fp is not None
+            self.isopen = isopen
+            # we cast to bytes to ensure we don't use any mmap functions....
             self.fasta = cast(
                 bytes,
                 mmap.mmap(self._fp.fileno(), 0, access=mmap.ACCESS_READ),
@@ -362,7 +367,7 @@ class CollectionFasta(Sequence[Record]):
     @overload
     def __getitem__(self, idx: list[int]) -> list[Record]: ...
 
-    def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:  # type: ignore
+    def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:
         if isinstance(idx, int):
             return self._get_idx(idx)
         if isinstance(idx, list):
@@ -406,7 +411,7 @@ class SubsetFasta(Sequence[Record]):
     @overload
     def __getitem__(self, idx: list[int]) -> list[Record]: ...
 
-    def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:  # type: ignore
+    def __getitem__(self, idx: int | slice | list[int]) -> Record | list[Record]:
         index = self._indexes
         if isinstance(idx, int):
             return self._dataset[index[idx]]
