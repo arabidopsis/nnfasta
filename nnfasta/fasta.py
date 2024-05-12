@@ -208,24 +208,24 @@ class RandomFasta(Sequence[Record]):
         if isinstance(fasta_file_or_bytes, bytes):
             self.isopen = False
             self.fasta = fasta_file_or_bytes
-            self.fp = None
+            self._fp = None
         else:
             self.isopen = isopen(fasta_file_or_bytes)
             if self.isopen:
-                self.fp = cast(IO[bytes], fasta_file_or_bytes)
+                self._fp = cast(IO[bytes], fasta_file_or_bytes)
             else:
-                self.fp = open(fasta_file_or_bytes, "rb")  # type: ignore
+                self._fp = open(fasta_file_or_bytes, "rb")  # type: ignore
             self.fasta = cast(
                 bytes,
-                mmap.mmap(self.fp.fileno(), 0, access=mmap.ACCESS_READ),
+                mmap.mmap(self._fp.fileno(), 0, access=mmap.ACCESS_READ),
             )
         self._pos = self._find_pos()
 
     def __del__(self):
         if self is not None:
-            if self.fp and not self.isopen:
-                self.fp.close()
-            self.fp = None
+            if self._fp and not self.isopen:
+                self._fp.close()
+            self._fp = None
 
     def _find_pos(self) -> array.ArrayType:
         end, start = zip(*((h.start(), h.end()) for h in PREFIX.finditer(self.fasta)))
@@ -291,9 +291,9 @@ class RandomFasta(Sequence[Record]):
 
     def close(self) -> None:
         """Close any open files"""
-        if self and self.fp is not None:
-            self.fp.close()
-            self.fp = None
+        if self and self._fp is not None:
+            self._fp.close()
+            self._fp = None
 
 
 class CollectionFasta(Sequence[Record]):
