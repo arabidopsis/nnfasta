@@ -44,7 +44,7 @@ def _test():
     _check(fasta, full)
     for b in iolist:
         b.close()
-    print("checking to_rec")
+    print("checking format")
     _check2(fasta, full)
     print("done.")
 
